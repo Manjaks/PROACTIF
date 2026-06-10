@@ -1,0 +1,326 @@
+schema_name: "rtu_output_schema"
+schema_version: "1.0"
+project: "Radar-enabled UAV navigation in forest environments"
+
+description: >
+  Schema for RTU algorithm output. The output represents a local 2D/3D radar-based
+  occupancy grid around the UAV. It is used for visualization, dataset logging,
+  evaluation, and later FHR/navigation integration.
+
+coordinate_convention:
+  output_frame: "uav_base_link"
+  x_axis: "forward"
+  y_axis: "left"
+  z_axis: "up"
+  linear_units: "meters"
+  angular_units: "radians"
+
+output_packet:
+  header:
+    output_id:
+      type: "integer"
+      required: true
+      description: "Unique sequential ID of the RTU output packet."
+      example: 1
+
+    schema_version:
+      type: "string"
+      required: true
+      example: "1.0"
+
+    source:
+      type: "string"
+      required: true
+      allowed_values:
+        - "real"
+        - "synthetic"
+        - "replay"
+      description: "Origin of the data used to produce this output."
+      example: "real"
+
+    output_timestamp_ns:
+      type: "integer"
+      required: true
+      description: "Timestamp when the RTU algorithm produced this output."
+      example: 1781000000180000000
+
+    input_packet_timestamp_ns:
+      type: "integer"
+      required: true
+      description: "Timestamp of the fused 360-degree input packet used for this output."
+      example: 1781000000100000000
+
+    frame_id:
+      type: "string"
+      required: true
+      description: "Coordinate frame of the output grid."
+      example: "uav_base_link"
+
+    environment_id:
+      type: "string"
+      required: true
+      allowed_values:
+        - "ENV-01"
+        - "ENV-02"
+        - "ENV-03"
+        - "ENV-04"
+        - "UNKNOWN"
+      example: "ENV-01"
+
+    scenario_id:
+      type: "string"
+      required: false
+      example: "SCN-05"
+
+  timing:
+    output_frequency_hz:
+      type: "float"
+      required: true
+      description: "Nominal output frequency of the RTU algorithm."
+      example: 5.0
+
+    processing_latency_ms:
+      type: "float"
+      required: true
+      description: >
+        Processing latency calculated as output_timestamp_ns - input_packet_timestamp_ns
+      example: 80.0
+
+    stale_output:
+      type: "boolean"
+      required: true
+      description: "True if the output is based on old/stale input data. Checks if latency is good and data represent current situation"
+      example: false
+
+  grid:
+    grid_type:
+      type: "string"
+      required: true
+      allowed_values:
+        - "local_2d_grid"
+        - "local_3d_grid"
+      example: "local_2d_grid"
+
+    frame_id:
+      type: "string"
+      required: true
+      description: "Coordinate frame of the grid."
+      example: "uav_base_link"
+
+    geometry:
+      resolution_m:
+        type: "float"
+        required: true
+        description: "Grid cell size in meters."
+        example: 0.25
+
+      width_cells:
+        type: "integer"
+        required: true
+        description: "Number of grid cells in x direction."
+        example: 80
+
+      height_cells:
+        type: "integer"
+        required: true
+        description: "Number of grid cells in y direction."
+        example: 80
+
+      x_min_m:
+        type: "float"
+        required: true
+        description: "Minimum x coordinate covered by grid."
+        example: -10.0
+
+      x_max_m:
+        type: "float"
+        required: true
+        description: "Maximum x coordinate covered by grid."
+        example: 10.0
+
+      y_min_m:
+        type: "float"
+        required: true
+        description: "Minimum y coordinate covered by grid."
+        example: -10.0
+
+      y_max_m:
+        type: "float"
+        required: true
+        description: "Maximum y coordinate covered by grid."
+        example: 10.0
+
+      origin_description:
+        type: "string"
+        required: true
+        description: "Human-readable explanation of grid origin."
+        example: "Grid centered on uav_base_link. x forward, y left."
+
+      layout:
+        type: "string"
+        required: true
+        allowed_values:
+          - "row_major"
+        example: "row_major"
+
+    classes:
+      class_encoding:
+        type: "integer_map"
+        required: true
+        description: "Meaning of each cell value in occupancy grid."
+        values:
+          0: "unknown"
+          1: "free"
+          2: "occupied"
+
+    occupancy_probability:
+      encoding:
+        type: "string"
+        required: true
+        allowed_values:
+          - "uint8_0_100"
+          - "float32_0_1"
+        example: "uint8_0_100"
+
+      data_reference:
+        type: "string"
+        required_if_storage_mode: "external_file"
+        description: "Path to stored confidence grid array."
+        example: "outputs/rtu_occupancy_grid/000001_confidence.npz"
+
+      data:
+        type: "flattened_array"
+        required_if_storage_mode: "embedded_array"
+        length: 6400
+        layout: "row_major"
+
+    occupancy:
+      encoding:
+        type: "string"
+        required: true
+        allowed_values:
+          - "uint8_class_id"
+          - "float32_occupancy_probability"
+        example: "uint8_class_id"
+
+      data_reference:
+        type: "string"
+        required_if_storage_mode: "external_file"
+        description: "Path to stored occupancy grid array."
+        example: "outputs/rtu_occupancy_grid/000001_occupancy.npz"
+
+      data:
+        type: "flattened_array"
+        length: 6400
+        layout: "row_major"
+        description: "Flattened 80 x 80 occupancy grid."
+
+  health:
+    status:
+      type: "string"
+      required: true
+      allowed_values:
+        - "OK"
+        - "DEGRADED"
+        - "INVALID"
+      description: "Overall RTU output status."
+      example: "OK"
+
+    reason:
+      type: "string"
+      required: false
+      description: "Short explanation of status."
+      example: "All required radar inputs available and synchronized."
+
+    missing_sensor_ids:
+      type: "list_string"
+      required: true
+      description: "Required sensors missing from this output."
+      example: []
+
+    degraded_sensor_ids:
+      type: "list_string"
+      required: true
+      description: "Sensors available but degraded."
+      example: []
+
+    stale_input:
+      type: "boolean"
+      required: true
+      example: false
+
+    calibration_valid:
+      type: "boolean"
+      required: true
+      description: "True if required radar extrinsics are valid."
+      example: true
+
+    synchronization_valid:
+      type: "boolean"
+      required: true
+      description: "True if input packet synchronization was valid."
+      example: true
+
+  optional_object_output:
+    description: >
+      Optional object-level output. Disabled in v1. Humans and vehicles may be
+      represented as occupied cells, but classification and dynamic tracking are
+      outside v1 scope.
+
+    enabled:
+      type: "boolean"
+      required: true
+      example: false
+
+    objects:
+      type: "list"
+      required_if_enabled: true
+      fields:
+        object_id:
+          type: "integer"
+          required: true
+
+        class_name:
+          type: "string"
+          required: false
+          allowed_values:
+            - "unknown"
+            - "human"
+            - "vehicle"
+            - "tree"
+            - "other"
+
+        position_x_m:
+          type: "float"
+          required: true
+
+        position_y_m:
+          type: "float"
+          required: true
+
+        confidence:
+          type: "float"
+          required: true
+          range: [0.0, 1.0]
+
+  debug:
+    required: false
+
+    algorithm_name:
+      type: "string"
+      required: false
+      example: "rtu_occupancy_mapper"
+
+    algorithm_version:
+      type: "string"
+      required: false
+      example: "0.1.0"
+
+    runtime_device:
+      type: "string"
+      required: false
+      example: "Orin AGX"
+
+    notes:
+      type: "string"
+      required: false

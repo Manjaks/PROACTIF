@@ -16,10 +16,31 @@ coordinate_convention:
   units: "meters"
   rotation_units: "radians"
 
+timestamp_convention: 
+  unit: "nanoseconds" 
+  epoch: "Unix UTC" 
+  required_clock_source: "common synchronized system clock" 
+  timestamp_definition: > Unless otherwise specified, the timestamp represents the temporal centre of the sensor measurement or acquisition frame. 
+  requirement: > All radar, LiDAR, IMU, GNSS, thermal-camera, and UAV-control timestamps shall use the same clock domain.
+
 input_packet:
   header:
     packet_id:
       type: "integer"
+      description: "unique sequential identifier of input packet"
+
+    recording_id:
+      type: "string"
+      description: "identifier of recording session"
+      example: "forest_test_2026_01"
+
+    source:
+      type: "string"
+      allowed_values: 
+        - "real" 
+        - "simulation" 
+        - "replay" 
+      example: "real"
 
   packet_synchronization:
     packet_start_ns:
@@ -35,44 +56,62 @@ input_packet:
       description: "Time spread between earliest and latest sensor measurement."
 
   radar_data:
-    sensor_id:
-      type: "string"
-      examples:
-        - "radar_front"
-        - "radar_left"
-        - "radar_right"
-        - "radar_rear"
-        - "radar_ground"
-
-    timestamp_ns:
-      type: "integer"
-      description: "Individual radar measurement timestamp."
-      example: 0
-
-    tensor:
-      shape:
-        type: "array_float_4"
-        format: "[doppler_bins, range_bins, azimuth_bins, elevation_bins]"
-        description: "each cell contains signal reflection power (e.g. dB)"
-        example: [64, 256, 107, 37]
-
-      value_type:
+    type: array
+    items:
+      sensor_id:
         type: "string"
-        allowed_values:
-          - "float32"
-          - "float16"
-          - "uint16"
-        example: "float32"
+        examples:
+          - "radar_front"
+          - "radar_left"
+          - "radar_right"
+          - "radar_rear"
+          - "radar_ground"
 
-      tensor_data_reference:
-        type: "string"
-        description: "Path to binary tensor data."
-        example: "radar/radar_front/000001_cube.npy"
+      frame_id: 
+        type: "string" 
+        description: "Coordinate frame in which the radar measurement is defined." 
+        example: "radar_front_link"
 
-      radar_config_reference:
-        type: "string"
-        description: "Path to radar configuration used to create the tensor"
-        example: "radar/radar_front/radar_config.txt"
+      timestamp_ns:
+        type: "integer"
+        description: "Individual radar measurement timestamp."
+        example: 0
+
+      tensor:
+        shape:
+          type: "array_float_4"
+          format: "[doppler_bins, range_bins, azimuth_bins, elevation_bins]"
+          description: "each cell contains signal reflection power (e.g. dB)"
+          example: [64, 256, 107, 37]
+
+        value_type:
+          type: "string"
+          allowed_values:
+            - "float32"
+            - "float16"
+            - "uint16"
+          example: "float32"
+
+        value_quantity: 
+          type: "string" 
+          allowed_values: 
+            - "linear_power" 
+            - "log_power_db" 
+            - "magnitude" 
+            - "normalized_power" 
+          description: > 
+            Physical or processed meaning of every tensor-cell value. 
+          example: "log_power_db"
+
+        tensor_data_reference:
+          type: "string"
+          description: "Path to binary tensor data."
+          example: "radar/radar_front/000001_cube.npy"
+
+        radar_config_reference:
+          type: "string"
+          description: "Path to radar configuration used to create the tensor"
+          example: "radar/radar_front/radar_config.yaml"
 
   lidar_reference:
     sensor_id:
@@ -80,14 +119,23 @@ input_packet:
       required: false
       example: "lidar_128"
 
+    frame_id: 
+      type: "string" 
+      example: "lidar_link"
+
     timestamp_ns:
       type: "integer"
 
     pointcloud:
-      shape:
-        type: "array_float_6"
+      point_fields:
+        type: array_float_6
         format: "[x, y, z, i(ntensity), r(ing), t(imestamp)]"
         example: [10, 1, 0.5, 1, 15, 193947839457]
+
+      shape:
+        type: "array_int_2"
+        format: "[number_of_points, number_of_fields]"
+        example: [120000, 6]
 
       value_type:
         type: "string"
@@ -102,6 +150,14 @@ input_packet:
         example: "lidar/000001_pointcloud.npy"
 
   imu:
+    sensor_id: 
+      type: "string" 
+      example: "imu_01"
+    
+    frame_id: 
+      type: "string" 
+      example: "imu_link"
+
     timestamp_ns:
       type: "integer"
 
@@ -120,36 +176,84 @@ input_packet:
       required: false
       example: [0.0, 0.0, 0.0, 1.0]
 
-  rtk_gps:
+  gnss_rtk:
+
+    sensor_id: 
+      type: "string" 
+      example: "gnss_rtk_01"
+
     timestamp_ns:
       type: "integer"
       example: 0
 
-    latitude_longitude_altitude_deg:
-      type: "array_float_3"
+    latitude_deg: 
+      type: "number" 
+      example: 56.9496 
+
+    longitude_deg: 
+      type: "number" 
+      example: 24.1052 
+
+    altitude_m: 
+      type: "number" 
+      example: 45.2
 
   thermal_cam:
-    sensor_id:
-      type: "string"
-      examples:
-        - "cam_01"
-        - "cam-02"
-        - "..."
+    type: array
+    items:
+      sensor_id:
+        type: "string"
+        examples:
+          - "cam_01"
+          - "cam-02"
+      
+      frame_id: 
+        type: "string" 
+        example: "thermal_front_link"
 
-    timestamp_ns:
-      type: "integer"
+      timestamp_ns:
+        type: "integer"
 
-    value_type:
-      type: "string"
-      allowed_values:
-        - "float32"
-        - "float16"
-      example: "float32"
+      value_type:
+        type: "string"
+        allowed_values:
+          - "float32"
+          - "float16"
+        example: "float32"
 
-    resolution:
-      type: "array_int_2"
-      example: [1024,768]
+      resolution:
+        type: "array_int_2"
+        order: ["width", "height"]
+        example: [1024,768]
 
-    data_reference:
-      type: "string"
-      example: "thermal/000001_image.jpg"
+      data_reference:
+        type: "string"
+        example: "thermal/000001_image.jpg"
+
+
+--------------------------------------------
+
+radar_configuration_minimum_requirements: 
+  description: > 
+    Every radar_config_reference shall resolve to a machine-readable YAML or JSON configuration containing at least the following information. 
+  
+  required_fields: 
+    - "configuration_id" 
+    - "radar_model" 
+    - "radar_serial_number" 
+    - "frame_rate_hz" 
+    - "carrier_frequency_hz" 
+    - "doppler_axis_values_mps_or_min_max_resolution" 
+    - "range_axis_values_m_or_min_max_resolution" 
+    - "azimuth_axis_values_rad_or_min_max_resolution" 
+    - "elevation_axis_values_rad_or_min_max_resolution" 
+    - "bandwidth" 
+    - "adc_sample_rate" 
+    - "samples_per_chirp" 
+    - "chirps_per_frame" 
+    - "number_of_tx_antennas" 
+    - "number_of_rx_antennas" 
+    - "range_resolution_m" 
+    - "doppler_resolution_mps" 
+    - "azimuth_resolution_rad" 
+    - "elevation_resolution_rad"

@@ -1,12 +1,12 @@
-schema_name: "rtu_input_schema"
-schema_version: "1.0"
-project: "Radar-enabled navigation in forest environments (PROACTIF)"
+structure_name: "data_input_structure"
+structure_version: "1.0"
+project: "PROACTIF"
 
 description: >
-  Input schema for RTU radar-based occupancy mapping algorithm.
-  The schema supports real sensor data, simulation data, and replay datasets.
-  Radar is the primary algorithm input. LiDAR is used as ground-truth/reference
-  data for training and validation.
+  Input data structure for RTU radar-based occupancy mapping algorithm. 
+  The structure supports real sensor and simulation data. 
+  Radar is the primary algorithm input. 
+  LiDAR is used as ground-truth/reference data for training and validation.
 
 coordinate_convention:
   main_frame: "uav_base_link"
@@ -20,376 +20,61 @@ input_packet:
   header:
     packet_id:
       type: "integer"
-      required: true
-      example: 0
-
-    source:
-      type: "string"
-      required: true
-      allowed_values:
-        - "real"
-        - "synthetic"
-        - "replay"
-      example: "real"
-
-    environment_id:
-      type: "string"
-      required: true
-      allowed_values:
-        - "ENV-01"
-        - "ENV-02"
-        - "ENV-03"
-        - "ENV-04"
-      example: "ENV-01"
-
-    weather:
-      type: "string"
-      required: true
-      allowed_values:
-        - "dry"
-        - "wet"
-        - "rain"
-        - "fog"
-        - "snow"
-        - "unknown"
-      example: "dry"
-
-    vegetation_density:
-      type: "string"
-      required: true
-      allowed_values:
-        - "low"
-        - "medium"
-        - "high"
-        - "unknown"
-      example: "medium"
-
-    scenario_id:
-      type: "string"
-      required: false
-      allowed_values:
-        - "SCN-05"
-        - "SCN-06"
-      example: "SCN-05"
-
-    frame_id:
-      type: "string"
-      required: true
-      example: "uav_base_link"
 
   packet_synchronization:
-    description: >
-      The fused 360-degree packet also has a reference timestamp. However, also each sensor frame has timestamp.
-
-    packet_timestamp_ns:
-      type: "integer"
-      required: true
-      description: >
-        Reference timestamp of the fused 360-degree radar packet.
-        Recommended v1 definition: newest radar timestamp in the packet.
-      example: 0
-
     packet_start_ns:
       type: "integer"
-      required: true
       description: "Earliest sensor timestamp in the input packet."
-      example: 0
 
     packet_end_ns:
       type: "integer"
-      required: true
       description: "Latest sensor timestamp in the input packet."
-      example: 0
 
     max_sensor_time_difference_ms:
-      type: "float"
-      required: true
+      type: "integer"
       description: "Time spread between earliest and latest sensor measurement."
-      example: 0.0
 
-    sync_status:
+  radar_data:
+    sensor_id:
       type: "string"
-      required: true
-      description: >
-        VALID sensor spread ≤ 20 ms; DEGRADED 20–50 ms; INVALID >50 ms or missing timestamp
-      allowed_values:
-        - "VALID"
-        - "DEGRADED"
-        - "INVALID"
-      example: "VALID"
-
-  platform_state:
-    description: "UAV motion and state information."
+      examples:
+        - "radar_front"
+        - "radar_left"
+        - "radar_right"
+        - "radar_rear"
+        - "radar_ground"
 
     timestamp_ns:
       type: "integer"
-      required: true
+      description: "Individual radar measurement timestamp."
       example: 0
 
-    frame_id:
-      type: "string"
-      required: true
-      example: "uav_base_link"
+    tensor:
+      shape:
+        type: "array_float_4"
+        format: "[doppler_bins, range_bins, azimuth_bins, elevation_bins]"
+        description: "each cell contains signal reflection power (e.g. dB)"
+        example: [64, 256, 107, 37]
 
-    position_available:
-      type: "boolean"
-      required: true
-      example: false
-
-    velocity_available:
-      type: "boolean"
-      required: true
-      example: true
-
-    linear_velocity_mps:
-      type: "array_float_3"
-      required: false
-      format: "[vx, vy, vz]"
-      example: [1.0, 0.0, 0.0]
-
-    angular_velocity_radps:
-      type: "array_float_3"
-      required: false
-      format: "[roll_rate, pitch_rate, yaw_rate]"
-      example: [0.0, 0.0, 0.0]
-
-    altitude_agl_m:
-      type: "float"
-      required: true
-      description: "UAV flight height above ground level."
-      example: 4.0
-
-    quality_flag:
-      type: "string"
-      required: true
-      allowed_values:
-        - "VALID"
-        - "DEGRADED"
-        - "INVALID"
-        - "UNKNOWN"
-      example: "VALID"
-
-  radars:
-    description: >
-      Radar suite is the primary RTU algorithm input. 
-      V1 assumes 4 radar prototypes covering approximately 360 degrees and 1 radar facing ground direction.
-      The schema must support fewer or more sensors if hardware changes.
-
-    required: true
-    min_radar_count: 1
-    expected_radar_count: 5
-
-    radar_message:
-      sensor_id:
+      value_type:
         type: "string"
-        required: true
-        examples:
-          - "radar_front"
-          - "radar_left"
-          - "radar_right"
-          - "radar_rear"
-          - "radar_ground"
-
-      timestamp_ns:
-        type: "integer"
-        required: true
-        description: "Individual radar measurement timestamp."
-        example: 0
-
-      frame_id:
-        type: "string"
-        required: true
-        examples:
-          - "radar_front_frame"
-          - "radar_left_frame"
-          - "radar_right_frame"
-          - "radar_rear_frame"
-          - "radar_ground_frame"
-
-      parent_frame:
-        type: "string"
-        required: true
-        example: "uav_base_link"
-
-      radar_config:
-        tx_count:
-          type: "integer"
-          required: false
-          example: 3
-
-        rx_count:
-          type: "integer"
-          required: false
-          example: 4
-
-        horizontal_fov_deg:
-          type: "float"
-          required: false
-          example: 90.0
-
-        vertical_fov_deg:
-          type: "float"
-          required: false
-          example: null
-
-        max_range_m:
-          type: "float"
-          required: false
-          example: 20.0
-
-      data_type:
-        type: "string"
-        required: true
         allowed_values:
-          - "pointcloud"
-          - "radar_cube"
-        example: "detections"
+          - "float32"
+          - "float16"
+          - "uint16"
+        example: "float32"
 
-      detections:
-        required_if_data_type:
-          - "pointcloud"
+      tensor_data_reference:
+        type: "string"
+        description: "Path to binary tensor data."
+        example: "radar/radar_front/000001_cube.npy"
 
-        fields:
-          x_m:
-            type: "float"
-            required: true
-
-          y_m:
-            type: "float"
-            required: true
-
-          z_m:
-            type: "float"
-            required: false
-
-          doppler_mps:
-            type: "float"
-            required: false
-
-          rcs_dbsm:
-            type: "float"
-            required: false
-
-          snr_db:
-            type: "float"
-            required: false
-
-      tensor:
-        required_if_data_type:
-          - "radar_cube"
-
-        fields:
-          tensor_layout:
-            type: "string"
-            required: true
-            allowed_values:
-              - "range_azimuth_elevation_doppler"
-              - "range_azimuth_doppler"
-            example: "range_azimuth_elevation_doppler"
-
-          tensor_shape:
-            type: "array_integer"
-            required: true
-            description: >
-              Tensor dimensions in the same order as tensor_layout.
-              Example for range_azimuth_elevation_doppler:
-              [range_bins, azimuth_bins, elevation_bins, doppler_bins].
-            example: "TBD from radar/simulator configuration"
-
-          value_type:
-            type: "string"
-            required: true
-            allowed_values:
-              - "float32"
-              - "float16"
-              - "uint16"
-            example: "float32"
-
-          tensor_data_reference:
-            type: "string"
-            required: true
-            description: "Path or pointer to binary tensor data."
-            example: "radar/radar_front/000001_cube.npy"
-
-          file_format:
-            type: "string"
-            required: true
-            allowed_values:
-              - "npy"
-              - "npz"
-              - "hdf5"
-              - "bin"
-            example: "npy"
-
-          range_resolution_m:
-            type: "float"
-            required: false
-            example: 0.15
-
-          azimuth_resolution_rad:
-            type: "float"
-            required: false
-            example: 0.02
-
-          elevation_resolution_rad:
-            type: "float"
-            required: false
-            example: 0.04
-
-          doppler_resolution_mps:
-            type: "float"
-            required: false
-            example: 0.1
-
-      calibration:
-        extrinsic_available:
-          type: "boolean"
-          required: true
-          example: true
-
-        calibration_id:
-          type: "string"
-          required: true
-          description: "ID/name of the calibration file. Record should contain the radar position and orientation relative to the UAV"
-          example: "calib_radar_front_001"
-
-        calibration_status:
-          type: "string"
-          required: true
-          allowed_values:
-            - "VALID"
-            - "MISSING"
-            - "EXPIRED"
-            - "UNKNOWN"
-          example: "VALID"
-
-      health:
-        sensor_status:
-          type: "string"
-          required: true
-          allowed_values:
-            - "OK"
-            - "DEGRADED"
-            - "INVALID"
-            - "MISSING"
-          example: "OK"
-
-        dropped_frame:
-          type: "boolean"
-          required: true
-          example: false
+      radar_config_reference:
+        type: "string"
+        description: "Path to radar configuration used to create the tensor"
+        example: "radar/radar_front/radar_config.txt"
 
   lidar_reference:
-    description: >
-      LiDAR is used as ground-truth/reference data for training,
-      validation, and benchmark generation. It is not a required runtime
-      input for the final radar-only algorithm.
-
-    enabled:
-      type: "boolean"
-      required: true
-      example: true
-
     sensor_id:
       type: "string"
       required: false
@@ -397,40 +82,28 @@ input_packet:
 
     timestamp_ns:
       type: "integer"
-      required_if_enabled: true
-      example: 0
 
-    frame_id:
-      type: "string"
-      required_if_enabled: true
-      example: "lidar_frame"
+    pointcloud:
+      shape:
+        type: "array_float_6"
+        format: "[x, y, z, i(ntensity), r(ing), t(imestamp)]"
+        example: [10, 1, 0.5, 1, 15, 193947839457]
 
-    pointcloud_format:
-      type: "string"
-      required_if_enabled: true
-      allowed_values:
-        - "xyz"
-        - "xyzi"
-        - "xyzirt"
-      example: "xyzi"
+      value_type:
+        type: "string"
+        allowed_values:
+          - "float32"
+          - "float16"
+        example: "float32"
 
-    data_reference:
-      type: "string"
-      required_if_enabled: true
-      description: "Path or pointer to LiDAR point cloud data."
+      pointcloud_data_reference:
+        type: "string"
+        description: "Path to LiDAR point cloud data."
+        example: "lidar/000001_pointcloud.npy"
 
   imu:
-    required: true
-
     timestamp_ns:
       type: "integer"
-      required: true
-      example: 0
-
-    frame_id:
-      type: "string"
-      required: true
-      example: "imu_frame"
 
     acceleration_mps:
       type: "array_float_3"
@@ -447,59 +120,36 @@ input_packet:
       required: false
       example: [0.0, 0.0, 0.0, 1.0]
 
-  gnss:
-    required: true
+  rtk_gps:
+    timestamp_ns:
+      type: "integer"
+      example: 0
 
-    enabled:
-      type: "boolean"
-      required: true
-      example: true
+    latitude_longitude_altitude_deg:
+      type: "array_float_3"
+
+  thermal_cam:
+    sensor_id:
+      type: "string"
+      examples:
+        - "cam_01"
+        - "cam-02"
+        - "..."
 
     timestamp_ns:
       type: "integer"
-      required_if_enabled: true
-      example: 0
 
-    latitude_deg:
-      type: "float"
-      required_if_enabled: false
-
-    longitude_deg:
-      type: "float"
-      required_if_enabled: false
-
-    altitude_m:
-      type: "float"
-      required_if_enabled: false
-
-    quality_flag:
+    value_type:
       type: "string"
-      required_if_enabled: true
       allowed_values:
-        - "GOOD"
-        - "DEGRADED"
-        - "UNAVAILABLE"
-        - "UNKNOWN"
-      example: "DEGRADED"
+        - "float32"
+        - "float16"
+      example: "float32"
 
-  thermal_cameras:
-    description: >
-      Thermal cameras are optional in v1 because camera parameters are currently unknown.
-      They may be logged for future sensor-fusion work but are not required for
-      the radar occupancy mapping MVP.
-
-    required: false
-
-    enabled:
-      type: "boolean"
-      required: true
-      example: false
-
-    camera_count:
-      type: "integer"
-      required_if_enabled: true
-      example: 4
+    resolution:
+      type: "array_int_2"
+      example: [1024,768]
 
     data_reference:
       type: "string"
-      required_if_enabled: false
+      example: "thermal/000001_image.jpg"

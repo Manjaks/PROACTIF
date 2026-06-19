@@ -238,7 +238,12 @@ output_packet:
       description: "Required sensors missing from this output."
       example: []
 
-
+    degraded_sensor_ids:
+      type: "list_string"
+      required: true
+      description: "Sensors available but degraded. State may change during the flight."
+      example: []
+      
     stale_input:
       type: "boolean"
       required: true

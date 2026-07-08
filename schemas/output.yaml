@@ -43,13 +43,13 @@ output_packet:
       required: true
       description: "Timestamp when the RTU algorithm produced this output."
       example: 1781000000180000000
-
-    input_packet_timestamp_ns:
+      
+    input_packet_id:
       type: "integer"
       required: true
-      description: "Timestamp of the fused 360-degree input packet used for this output."
-      example: 1781000000100000000
-
+      description: "Unique ID of the fused 360-degree input packet used for this output."
+      example: 42
+      
     frame_id:
       type: "string"
       required: true
@@ -83,7 +83,7 @@ output_packet:
       type: "float"
       required: true
       description: >
-        Processing latency calculated as output_timestamp_ns - input_packet_timestamp_ns
+        Processing latency calculated as (output_timestamp_ns - input_packet_timestamp_ns)/1_000_000
       example: 80.0
 
     stale_output:
@@ -241,9 +241,9 @@ output_packet:
     degraded_sensor_ids:
       type: "list_string"
       required: true
-      description: "Sensors available but degraded."
+      description: "Sensors available but degraded. State may change during the flight."
       example: []
-
+      
     stale_input:
       type: "boolean"
       required: true
@@ -252,14 +252,10 @@ output_packet:
     calibration_valid:
       type: "boolean"
       required: true
-      description: "True if required radar extrinsics are valid."
+      description: "True if required radar extrinsics are valid.
+       Set as a static value before flight " 
       example: true
 
-    synchronization_valid:
-      type: "boolean"
-      required: true
-      description: "True if input packet synchronization was valid."
-      example: true
 
   optional_object_output:
     description: >

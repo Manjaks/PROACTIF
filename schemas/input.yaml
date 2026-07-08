@@ -197,7 +197,23 @@ input_packet:
     altitude_m: 
       type: "number" 
       example: 45.2
+    fix_status:
+      type: "string"
+      allowed_values:
+        - "no_fix"
+        - "single"
+        - "dgps"
+        - "rtk_float"
+        - "rtk_fixed"
+      description: >
+        RTK solution quality.
+      example: "rtk_fixed"
 
+    num_satellites:
+      type: "integer"
+      required: false
+      example: 18
+      
   thermal_cam:
     type: array
     items:
@@ -224,11 +240,12 @@ input_packet:
       resolution:
         type: "array_int_2"
         order: ["width", "height"]
-        example: [1024,768]
+        example: [120,90]
 
       data_reference:
         type: "string"
-        example: "thermal/000001_image.jpg"
+        description: "raw is preferable"
+        example: "thermal/000001_image.TIFF"
 
 
 --------------------------------------------
